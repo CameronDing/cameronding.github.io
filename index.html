@@ -57,6 +57,20 @@
             transform: translateY(-5px);
             box-shadow: 0 12px 24px rgba(0,0,0,0.1);
         }
+        /* 下载页面专属样式（无需移动端布局） */
+        .download-page {
+            min-height: 100vh;
+            background-color: #f5f5f7;
+            padding: 4rem 2rem;
+        }
+        .download-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
     </style>
     <!-- Tailwind自定义配置 -->
     <script>
@@ -77,8 +91,9 @@
         }
     </script>
 </head>
-<body class="bg-light text-dark font-sans">
-    <!-- 导航栏（含3D旋转文字） -->
+<!-- 判断是否为下载页面，添加不同body类 -->
+<body class="bg-light text-dark font-sans" id="app-body">
+    <!-- 导航栏（含3D旋转文字 + 新增下载按钮） -->
     <header id="navbar" class="navbar-scroll fixed w-full top-0 left-0 z-50 bg-transparent py-4">
         <div class="container mx-auto px-4 md:px-8 flex justify-between items-center">
             <!-- 左上角3D旋转文字 -->
@@ -86,13 +101,21 @@
                 <div class="text-3d" data-text="丁佳铭">丁佳铭</div>
             </div>
             
-            <!-- 桌面端导航菜单（已移除立即联系按钮） -->
-            <nav class="hidden md:flex items-center space-x-8">
-                <a href="#home" class="text-white hover:text-primary transition-colors duration-300 font-medium">首页</a>
-                <a href="#about" class="text-white hover:text-primary transition-colors duration-300 font-medium">关于老子</a>
-                <a href="#works" class="text-white hover:text-primary transition-colors duration-300 font-medium">作品展示</a>
-                <a href="#contact" class="text-white hover:text-primary transition-colors duration-300 font-medium">联系老子</a>
-            </nav>
+            <!-- 桌面端导航菜单 + 新增“下载我的文件”按钮 -->
+            <div class="hidden md:flex items-center space-x-8">
+                <nav class="flex items-center space-x-8">
+                    <a href="#home" class="text-white hover:text-primary transition-colors duration-300 font-medium">首页</a>
+                    <a href="#about" class="text-white hover:text-primary transition-colors duration-300 font-medium">关于老子</a>
+                    <a href="#works" class="text-white hover:text-primary transition-colors duration-300 font-medium">作品展示</a>
+                    <a href="#contact" class="text-white hover:text-primary transition-colors duration-300 font-medium">联系老子</a>
+                    <a href="#my-message" class="text-white hover:text-primary transition-colors duration-300 font-medium">我的留言</a>
+                </nav>
+                <!-- 右上角蓝底白字下载按钮 -->
+                <a href="https://djm.pages.dev" target="_blank" class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2">
+                    <i class="fa fa-download"></i>
+                    <span>下载我的文件</span>
+                </a>
+            </div>
             
             <!-- 移动端菜单按钮 -->
             <button id="menuBtn" class="md:hidden text-white text-2xl focus:outline-none">
@@ -107,8 +130,11 @@
                 <a href="#about" class="text-dark hover:text-primary transition-colors duration-300 font-medium py-2">关于我</a>
                 <a href="#works" class="text-dark hover:text-primary transition-colors duration-300 font-medium py-2">作品展示</a>
                 <a href="#contact" class="text-dark hover:text-primary transition-colors duration-300 font-medium py-2">联系我</a>
-                <a href="#contact" class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg transition-all duration-300 text-center shadow-md">
-                    立即联系
+                <a href="#my-message" class="text-dark hover:text-primary transition-colors duration-300 font-medium py-2">我的留言</a>
+                <!-- 移动端下载按钮（可选，保持与桌面端功能一致） -->
+                <a href="download-page.html" target="_blank" class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg transition-all duration-300 text-center shadow-md flex items-center justify-center gap-2">
+                    <i class="fa fa-download"></i>
+                    <span>下载我的文件</span>
                 </a>
             </div>
         </div>
@@ -224,7 +250,7 @@
                 
                 <!-- 作品2文本框 -->
                 <div class="bg-white rounded-xl p-8 shadow-lg card-hover">
-                    <h3 class="text-xl font-semibold mb-4 text-primary">给王坎（可）儿——</h3>
+                    <h3 class="text-5xl font-semibold mb-4 text-primary"> 给王可儿</h3>
                     <p class="text-gray-700 leading-relaxed">
                         中国有句古话叫作：识时务者为俊杰。
                     </p>
@@ -341,6 +367,30 @@
         </div>
     </section>
 
+    <!-- 我的留言区域（已删除按钮） -->
+    <section id="my-message" class="py-20 md:py-28 bg-light">
+        <div class="container mx-auto px-4 md:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold mb-4">我的留言</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto text-lg">
+                    这里是我想分享的内容，欢迎查看和互动
+                </p>
+                <div class="w-24 h-1 bg-primary mx-auto mt-6 rounded-full"></div>
+            </div>
+            
+            <!-- 留言文本框区域（仅保留文本框） -->
+            <div class="max-w-3xl mx-auto bg-white p-8 md:p-10 rounded-xl shadow-lg">
+                <div>
+                    <label for="my-message-content" class="block text-gray-700 font-medium mb-3 text-lg">&nbsp;&nbsp;&nbsp;自己人才知道的几句话：</label>
+                    <!-- 带默认文本的文本框 -->
+                    <textarea id="my-message-content" rows="8" class="w-full px-4 py-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 resize-none text-gray-800" placeholder="请输入留言内容" readonly>催命四部曲：精神的，沙楞的，利索的，板正的！
+最恰当的形容：跟那鸡嘎一段没死似的！
+做错事的后果：脑瓜子给你削炸（放屁）它！</textarea>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- 页脚 -->
     <footer class="bg-dark text-white py-12 px-4">
         <div class="container mx-auto px-4 md:px-8">
@@ -361,6 +411,7 @@
                         <li><a href="#about" class="text-gray-400 hover:text-white transition-colors duration-300">关于我</a></li>
                         <li><a href="#works" class="text-gray-400 hover:text-white transition-colors duration-300">作品展示</a></li>
                         <li><a href="#contact" class="text-gray-400 hover:text-white transition-colors duration-300">联系我</a></li>
+                        <li><a href="#my-message" class="text-gray-400 hover:text-white transition-colors duration-300">我的留言</a></li>
                     </ul>
                 </div>
                 
@@ -374,15 +425,19 @@
                         <li class="flex items-center text-gray-400">
                             <i class="fa fa-phone mr-2"></i>
                             <span>012-3456-7890</span>
+                        </li>
                         <li class="flex items-center text-gray-400">
-                            <span>QQ：3762191461（Mr.Ding）<br>迷你世界账号：1839199227（黄执事汪）</span>
+                            <span>QQ：3762191461（Mr.Ding）</span>
+                        </li>
+                        <li class="flex items-center text-gray-400">
+                            <span>迷你世界账号：1839199227（黄执事汪）</span>
                         </li>
                     </ul>
                 </div>
             </div>
             
             <div class="border-t border-gray-800 pt-8 text-center text-gray-500">
-                <p>&copy; 2026 丁佳铭. 保留所有权利.</p>
+                <p>&copy; 2075 丁佳铭, 保留所有权利.</p>
             </div>
         </div>
     </footer>
