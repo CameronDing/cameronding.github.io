@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件下载中心 - 丁佳铭</title>
+    <!-- 引入Tailwind CSS简化样式 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome图标库 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 自定义样式 -->
+    <style>
+        .download-page {
+            min-height: 100vh;
+            background-color: #f5f5f7;
+            padding: 4rem 2rem;
+        }
+        .download-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+        .file-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .file-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        }
+    </style>
+    <!-- Tailwind自定义配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#007aff',
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="download-page">
+    <div class="download-container">
+        <!-- 顶部区域：标题 + 返回按钮 -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-10">
+            <!-- 页面标题区域 -->
+            <div>
+                <h1 class="text-3xl font-bold text-dark mb-2 flex items-center gap-2">
+                    <i class="fa fa-download text-primary"></i>
+                    <span>文件下载中心</span>
+                </h1>
+                <div class="w-20 h-1 bg-primary rounded-full"></div>
+                <p class="text-gray-600 mt-4">这里可以下载我的各类作品和资源文件，点击下载按钮即可获取。</p>
+            </div>
+            
+            <!-- 返回首页按钮（移至右上方） -->
+            <div class="mt-4 md:mt-0">
+                <a 
+                    href="index.html" 
+                    class="text-primary hover:text-primary/80 font-medium transition-colors duration-300 flex items-center gap-1"
+                >
+                    <i class="fa fa-arrow-left"></i>
+                    <span>返回首页</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- 文件列表区域 -->
+        <div class="space-y-8">
+            <!-- 文件1 -->
+            <div class="file-card bg-light p-6 rounded-xl border border-gray-100">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <!-- 文件信息 -->
+                    <div class="flex-1">
+                        <h3 class="text-xl font-semibold text-dark mb-2">老八秘制小汉堡</h3>
+                        <div class="text-gray-600 space-y-1 text-sm">
+                            <p><i class="fa fa-music mr-2 text-primary"></i>文件类型：音频文件（MP3）</p>
+                            <p><i class="fa fa-hdd-o mr-2 text-primary"></i>文件大小：9.06MB</p>
+                            <p><i class="fa fa-calendar mr-2 text-primary"></i>更新时间：1915-9-20</p>
+                            <p><i class="fa fa-list-ul mr-2 text-primary"></i>包含内容：有损音频</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 下载按钮 -->
+                    <div class="flex-shrink-0">
+                        <a 
+                            href="https://djm.pages.dev/files/Laoba.mp3" 
+                            download="老八秘制小汉堡.mp3" 
+                            class="inline-block bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2"
+                        >
+                            <i class="fa fa-download"></i>
+                            <span>下载</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <p class="text-gray-500 text-sm"><i class="fa fa-info-circle mr-1 text-primary"></i>特别提示：该音频源自网络，侵权立删；如果浏览器跳转到了播放页面，点击“···”选择“下载”选项即可。</p>
+                </div>
+            </div>
+            
+            <!-- 文件2 -->
+            <div class="file-card bg-light p-6 rounded-xl border border-gray-100">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <!-- 文件信息 -->
+                    <div class="flex-1">
+                        <h3 class="text-xl font-semibold text-dark mb-2">恶搞程序</h3>
+                        <div class="text-gray-600 space-y-1 text-sm">
+                            <p><i class="fa fa-bars mr-2 text-primary"></i>文件类型：Windows应用程式（EXE）</p>
+                            <p><i class="fa fa-hdd-o mr-2 text-primary"></i>文件大小：28.0MB</p>
+                            <p><i class="fa fa-calendar mr-2 text-primary"></i>更新时间：2025-9-11</p>
+                            <p><i class="fa fa-list-ul mr-2 text-primary"></i>包含内容：--</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 下载按钮 -->
+                    <div class="flex-shrink-0">
+                        <a 
+                            href="https://djm.pages.dev/files/Spoof program.exe" 
+                            download="恶搞程序.exe" 
+                            class="inline-block bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2"
+                        >
+                            <i class="fa fa-download"></i>
+                            <span>下载</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <p class="text-gray-500 text-sm"><i class="fa fa-info-circle mr-1 text-primary"></i>免责声明：<br>
+1.本程序为恶搞类程序，无硬件、软件破坏风险，重启电脑即可解除；<br>
+2.用户因为需要解除程序而重启电脑可能导致未保存的文件丢失，建议保存正在编辑的文件后再启动；<br>
+3.程序内包含个性化内容，若引起不适请立即关闭程序（重启电脑）；<br>
+4.使用者需自行承担使用本程序的一切后果，开发者不承担任何责任。</p>
+<p class="text-gray-500 text-sm"><br><i class="fa fa-info-circle mr-1 text-primary"></i>该程序为作者自制，风险仅如上所述，无其它风险，如果遇到系统或杀毒软件的弹窗警告可不予理会。</p>
+                </div>
+            </div>
+            
+            <!-- 在这里添加更多文件 -->
+            <!-- 复制上面的.file-card区块，修改文件信息和下载链接即可 -->
+            
+        </div>
+    </div>
+</body>
+</html>
+    
