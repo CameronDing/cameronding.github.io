@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>极简音频播放器</title>
+  <!-- 引入Tailwind CSS（轻量化依赖） -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入Font Awesome（仅用播放/暂停图标） -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <!-- 自定义样式：仅保留核心交互样式 -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .progress-slider {
+        -webkit-appearance: none;
+        height: 4px;
+        border-radius: 2px;
+        background: #E2E8F0;
+        outline: none;
+      }
+      .progress-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #3B82F6;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+      }
+      .progress-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.2);
+      }
+      .play-btn {
+        transition: all 0.2s ease;
+      }
+      .play-btn:active {
+        transform: scale(0.95);
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4 font-sans text-gray-800 dark:text-gray-200">
+  <!-- 播放器容器：居中显示，适配移动端 -->
+  <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+    <!-- 1. 标题展示（接收外部传参） -->
+    <div class="text-center mb-6">
+      <h1 id="audioTitle" class="text-lg md:text-xl font-medium truncate">未指定音频</h1>
+    </div>
+    
+    <!-- 2. 进度条与时间显示 -->
+    <div class="mb-8">
+      <!-- 时间显示：左当前时间，右总时长 -->
+      <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+        <span id="currentTime">00:00</span>
+        <span id="totalTime">00:00</span>
+      </div>
+      <!-- 进度条 -->
+      <input type="range" id="progressBar" class="progress-slider w-full" min="0" max="100" value="0">
+    </div>
+    
+    <!-- 3. 核心控制：仅播放/暂停 -->
+    <div class="flex justify-center">
+      <button id="playPauseBtn" class="play-btn w-16 h-16 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg hover:bg-blue-600">
+        <i id="playPauseIcon" class="fa fa-play text-2xl ml-1"></i>
+      </button>
+    </div>
+  </div>
+  
+  <!-- 隐藏的音频元素（核心播放载体） -->
+  <audio id="audioPlayer" style="display: none;"></audio>
+  
+  <script>
+    // 1. DOM元素获取（仅核心元素）
+    const audioPlayer = document.getElementById('audioPlayer');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const playPauseIcon = document.getElementById('playPauseIcon');
+    const progressBar = document.getElementById('progressBar');
+    const currentTimeEl = document.getElementById('currentTime');
+    const totalTimeEl = document.getElementById('totalTime');
+    const audioTitle = document.getElementById('audioTitle');
+    
+    // 2. 状态管理（仅必要状态）
+    let isPlaying = false;
+    let receivedParams = {}; // 存储外部传参
+    
+    // 3. 外部参数接收与处理
+    // 3.1 解析URL参数（如：player.html?url=xxx.mp3&title=音频标题）
+    function parseURLParams() {
+      const params = new URLSearchParams(window.location.search);
+      const result = {};
+      for (const [key, value] of params.entries()) {
+        result[key] = decodeURIComponent(value); // 解码中文等特殊字符
+      }
+      return result;
+    }
+    
+    // 3.2 接收postMessage消息（支持其他页面直接传参）
+    function handleMessage(event) {
+      // 可选：添加信任域名验证（防止恶意调用）
+      // if (event.origin !== "https://你的信任域名.com") return;
+      if (typeof event.data === 'object') {
+        handleReceivedParams(event.data);
+      }
+    }
+    
+    // 3.3 统一处理接收的参数
+    function handleReceivedParams(params) {
+      receivedParams = params;
+      // 优先使用传参的标题，无则默认"未指定音频"
+      audioTitle.textContent = params.title || '未指定音频';
+      // 若有音频URL，设置播放源
+      if (params.url) {
+        audioPlayer.src = params.url;
+        // 可选：传参autoplay=true时自动播放
+        if (params.autoplay === 'true') {
+          playAudio();
+        }
+      }
+    }
+    
+    // 4. 核心功能逻辑
+    // 4.1 时间格式化（秒 → MM:SS）
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      // 补零（确保格式统一，如01:05而非1:5）
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    // 4.2 更新进度条与时间
+    function updateProgress() {
+      if (!isNaN(audioPlayer.duration)) { // 避免音频未加载时的NaN问题
+        const progressPercent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+        progressBar.value = progressPercent;
+        currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
+        totalTimeEl.textContent = formatTime(audioPlayer.duration);
+      }
+    }
+    
+    // 4.3 播放音频
+    function playAudio() {
+      audioPlayer.play().then(() => {
+        isPlaying = true;
+        playPauseIcon.classList.replace('fa-play', 'fa-pause'); // 切换图标
+      }).catch(error => {
+        console.error('播放失败：', error);
+        // 可选：添加播放失败提示（如弹窗）
+      });
+    }
+    
+    // 4.4 暂停音频
+    function pauseAudio() {
+      audioPlayer.pause();
+      isPlaying = false;
+      playPauseIcon.classList.replace('fa-pause', 'fa-play'); // 切换图标
+    }
+    
+    // 4.5 切换播放/暂停
+    function togglePlayPause() {
+      isPlaying ? pauseAudio() : playAudio();
+    }
+    
+    // 4.6 进度条拖动调整
+    function seekToProgress() {
+      if (!isNaN(audioPlayer.duration)) {
+        const targetTime = (progressBar.value / 100) * audioPlayer.duration;
+        audioPlayer.currentTime = targetTime;
+      }
+    }
+    
+    // 4.7 音频播放结束处理
+    function handleAudioEnded() {
+      isPlaying = false;
+      playPauseIcon.classList.replace('fa-pause', 'fa-play');
+      progressBar.value = 0; // 重置进度条
+      currentTimeEl.textContent = '00:00';
+    }
+    
+    // 5. 事件监听（仅核心交互）
+    playPauseBtn.addEventListener('click', togglePlayPause); // 播放/暂停点击
+    progressBar.addEventListener('input', seekToProgress); // 进度条拖动
+    audioPlayer.addEventListener('timeupdate', updateProgress); // 实时更新进度
+    audioPlayer.addEventListener('ended', handleAudioEnded); // 播放结束
+    window.addEventListener('message', handleMessage); // 接收外部消息
+    
+    // 6. 页面初始化（加载时解析参数）
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = parseURLParams();
+      handleReceivedParams(urlParams);
+      // 自动适配深色模式（跟随系统设置）
+      if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+      }
+    });
+  </script>
+</body>
+</html>
