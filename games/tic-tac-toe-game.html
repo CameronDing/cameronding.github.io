@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>井字棋 - 人机对战</title>
+    <title>丁佳铭的人机对战井字棋游戏</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     
@@ -119,8 +119,8 @@
         // 难度调整参数 - 控制电脑AI的犯错概率
         const difficulty = {
             winProbability: 0.95,    // 电脑有80%概率选择能直接获胜的位置
-            defendProbability: 0.9, // 电脑有60%概率选择防守位置
-            randomMoveProbability: 0.1 // 随机落子的概率
+            defendProbability: 0.95, // 电脑有60%概率选择防守位置
+            randomMoveProbability: 0.05 // 随机落子的概率
         };
         
         // DOM 元素
@@ -225,7 +225,7 @@
             
             // 检查游戏结果
             if (checkWinner()) {
-                statusElement.textContent = '电脑获胜！，……';
+                statusElement.textContent = '电脑获胜。';
                 gameActive = false;
                 return;
             }
