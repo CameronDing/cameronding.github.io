@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>下载副页 - djm.pages.dev</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 统一的 Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#005DF0',
+                        primaryHover: '#003DF0',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-all-300 {
+                transition: all 300ms ease-in-out;
+            }
+            .border-primary {
+                border-color: #005DF0;
+            }
+            .border-primaryHover {
+                border-color: #003DF0;
+            }
+        }
+    </style>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        
+        .content-container {
+            margin: 0 2cm;
+        }
+        
+        .btn-left {
+            border: 2px solid #005DF0;
+            color: #000000;
+            background-color: transparent;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            transition: all 300ms ease-in-out;
+        }
+        
+        .btn-left:hover {
+            border-color: #003DF0;
+            background-color: rgba(0, 93, 240, 0.05);
+        }
+        
+        .btn-right {
+            background-color: #005DF0;
+            color: #ffffff;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            transition: all 300ms ease-in-out;
+        }
+        
+        .btn-right:hover {
+            background-color: #003DF0;
+        }
+        
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- 标题区域 -->
+        <div class="text-center mb-8">
+            <div id="header-container" class="header-container">
+                <span id="prefix-text" class="text-3xl font-bold text-primary"></span>
+                <h1 id="nm-content" class="text-3xl font-bold text-primary"></h1>
+                <span id="suffix-text" class="text-3xl font-bold text-primary"></span>
+            </div>
+            <p id="tp-content" class="text-xl text-gray-600 mt-4"></p>
+        </div>
+        
+        <!-- 文本内容区域 -->
+        <div class="content-container bg-gray-50 rounded-lg p-6 shadow-sm mb-8">
+            <div id="txt-content" class="prose max-w-none text-gray-700"></div>
+        </div>
+        
+        <!-- 按钮区域 -->
+        <div class="flex justify-center gap-4">
+            <button id="left-button" class="btn-left">
+                <i class="fa fa-times mr-2"></i><span id="left-button-text">取消</span>
+            </button>
+            <a id="right-button" class="btn-right inline-flex items-center">
+                <i class="fa fa-check mr-2"></i><span id="right-button-text">确认</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // 获取URL参数
+        function getUrlParameter(name) {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            const results = regex.exec(location.search);
+            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+
+        // 设置默认参数
+        const nm = getUrlParameter('nm') || 'Test mode';
+        const tp = getUrlParameter('tp') || '请仔细阅读以下条款，并在页面最下方执行您的操作。';
+        const txt = getUrlParameter('txt') || 'https://djm.pages.dev/files/exes/exes-tips.txt';
+        const tgt = getUrlParameter('tgt') || 'https://djm.pages.dev/files/exes/exes-tips.txt';
+        const md = getUrlParameter('md') || 'download';
+
+        // 更新页面内容
+        document.getElementById('nm-content').textContent = nm;
+        document.getElementById('tp-content').textContent = tp;
+
+        // 根据md参数设置标题前后缀和按钮文本
+        const prefixText = document.getElementById('prefix-text');
+        const suffixText = document.getElementById('suffix-text');
+        const leftButtonText = document.getElementById('left-button-text');
+        const rightButtonText = document.getElementById('right-button-text');
+
+        if (md === 'download') {
+            prefixText.textContent = '下载';
+            suffixText.textContent = '需知';
+            leftButtonText.textContent = '退出';
+            rightButtonText.textContent = '同意并下载';
+        } else if (md === 'e-link') {
+            prefixText.textContent = '已找到';
+            suffixText.textContent = '。';
+            leftButtonText.textContent = '退出';
+            rightButtonText.textContent = '同意并下载';
+        }
+
+        // 设置右侧按钮链接
+        const rightButton = document.getElementById('right-button');
+        rightButton.href = tgt;
+        rightButton.download = tgt.split('/').pop();
+
+        // 左侧按钮关闭标签页功能
+        document.getElementById('left-button').addEventListener('click', function() {
+            window.close();
+        });
+
+        // 右侧按钮点击后下载并关闭标签页
+        rightButton.addEventListener('click', function(e) {
+            // 创建一个隐藏的iframe来触发下载
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = tgt;
+            document.body.appendChild(iframe);
+            
+            // 延迟关闭，给下载留出时间
+            setTimeout(function() {
+                window.close();
+            }, 1000);
+        });
+
+        // 加载txt内容
+        async function loadTextContent() {
+            try {
+                const response = await fetch(txt);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const text = await response.text();
+                
+                // 将文本内容转换为HTML格式（保留换行）
+                const htmlContent = text.replace(/\n/g, '<br>');
+                document.getElementById('txt-content').innerHTML = htmlContent;
+            } catch (error) {
+                document.getElementById('txt-content').innerHTML = '<p class="text-red-500">无法加载文本内容，请稍后重试。</p>';
+                console.error('Error loading text content:', error);
+            }
+        }
+
+        // 页面加载完成后加载文本内容
+        window.addEventListener('DOMContentLoaded', loadTextContent);
+    </script>
+</body>
+</html>
