@@ -131,40 +131,8 @@
         const tgt = getUrlParameter('tgt') || 'https://djm.pages.dev/files/apps/apps-tips.txt';
         const md = getUrlParameter('md') || 'download';
 
-        // 更新页面内容
-        document.getElementById('nm-content').textContent = nm;
-        document.getElementById('tp-content').textContent = tp;
-
-        // 根据md参数设置标题前后缀和按钮文本
-        const prefixText = document.getElementById('prefix-text');
-        const suffixText = document.getElementById('suffix-text');
-        const leftButtonText = document.getElementById('left-button-text');
-        const rightButtonText = document.getElementById('right-button-text');
-
-        if (md === 'download') {
-            prefixText.textContent = '下载';
-            suffixText.textContent = '需知';
-            leftButtonText.textContent = '退出';
-            rightButtonText.textContent = '同意并下载';
-        } else if (md === 'e-link') {
-            prefixText.textContent = '已找到';
-            suffixText.textContent = '。';
-            leftButtonText.textContent = '退出';
-            rightButtonText.textContent = '同意并下载';
-        }
-
-        // 设置右侧按钮链接
-        const rightButton = document.getElementById('right-button');
-        rightButton.href = tgt;
-        rightButton.download = tgt.split('/').pop();
-
-        // 左侧按钮关闭标签页功能
-        document.getElementById('left-button').addEventListener('click', function() {
-            window.close();
-        });
-
-        // 右侧按钮点击后下载并关闭标签页
-        rightButton.addEventListener('click', function(e) {
+        // 如果是fstelnk模式，直接触发下载并关闭页面
+        if (md === 'fstelnk') {
             // 创建一个隐藏的iframe来触发下载
             const iframe = document.createElement('iframe');
             iframe.style.display = 'none';
@@ -175,28 +143,74 @@
             setTimeout(function() {
                 window.close();
             }, 1000);
-        });
+        } else {
+            // 更新页面内容
+            document.getElementById('nm-content').textContent = nm;
+            document.getElementById('tp-content').textContent = tp;
 
-        // 加载txt内容
-        async function loadTextContent() {
-            try {
-                const response = await fetch(txt);
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const text = await response.text();
-                
-                // 将文本内容转换为HTML格式（保留换行）
-                const htmlContent = text.replace(/\n/g, '<br>');
-                document.getElementById('txt-content').innerHTML = htmlContent;
-            } catch (error) {
-                document.getElementById('txt-content').innerHTML = '<p class="text-red-500">无法加载文本内容，请稍后重试。</p>';
-                console.error('Error loading text content:', error);
+            // 根据md参数设置标题前后缀和按钮文本
+            const prefixText = document.getElementById('prefix-text');
+            const suffixText = document.getElementById('suffix-text');
+            const leftButtonText = document.getElementById('left-button-text');
+            const rightButtonText = document.getElementById('right-button-text');
+
+            if (md === 'download') {
+                prefixText.textContent = '下载';
+                suffixText.textContent = '需知';
+                leftButtonText.textContent = '退出';
+                rightButtonText.textContent = '同意并下载';
+            } else if (md === 'e-link') {
+                prefixText.textContent = '已找到';
+                suffixText.textContent = '。';
+                leftButtonText.textContent = '退出';
+                rightButtonText.textContent = '同意并下载';
             }
-        }
 
-        // 页面加载完成后加载文本内容
-        window.addEventListener('DOMContentLoaded', loadTextContent);
+            // 设置右侧按钮链接
+            const rightButton = document.getElementById('right-button');
+            rightButton.href = tgt;
+            rightButton.download = tgt.split('/').pop();
+
+            // 左侧按钮关闭标签页功能
+            document.getElementById('left-button').addEventListener('click', function() {
+                window.close();
+            });
+
+            // 右侧按钮点击后下载并关闭标签页
+            rightButton.addEventListener('click', function(e) {
+                // 创建一个隐藏的iframe来触发下载
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = tgt;
+                document.body.appendChild(iframe);
+                
+                // 延迟关闭，给下载留出时间
+                setTimeout(function() {
+                    window.close();
+                }, 1000);
+            });
+
+            // 加载txt内容
+            async function loadTextContent() {
+                try {
+                    const response = await fetch(txt);
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    const text = await response.text();
+                    
+                    // 将文本内容转换为HTML格式（保留换行）
+                    const htmlContent = text.replace(/\n/g, '<br>');
+                    document.getElementById('txt-content').innerHTML = htmlContent;
+                } catch (error) {
+                    document.getElementById('txt-content').innerHTML = '<p class="text-red-500">无法加载文本内容，请稍后重试。</p>';
+                    console.error('Error loading text content:', error);
+                }
+            }
+
+            // 页面加载完成后加载文本内容
+            window.addEventListener('DOMContentLoaded', loadTextContent);
+        }
     </script>
 </body>
 </html>
