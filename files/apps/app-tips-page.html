@@ -107,7 +107,7 @@
         <!-- 按钮区域 -->
         <div class="flex justify-center gap-4">
             <button id="left-button" class="btn-left">
-                <i class="fa fa-times mr-2"></i><span id="left-button-text">取消</span>
+                <i class="fa fa-arrow-left mr-2"></i><span id="left-button-text">返回</span>
             </button>
             <a id="right-button" class="btn-right inline-flex items-center">
                 <i class="fa fa-check mr-2"></i><span id="right-button-text">确认</span>
@@ -139,9 +139,9 @@
             iframe.src = tgt;
             document.body.appendChild(iframe);
             
-            // 延迟关闭，给下载留出时间
+            // 延迟返回上一页，给下载留出时间
             setTimeout(function() {
-                window.close();
+                history.back();
             }, 1000);
         } else {
             // 更新页面内容
@@ -157,12 +157,12 @@
             if (md === 'download') {
                 prefixText.textContent = '下载';
                 suffixText.textContent = '需知';
-                leftButtonText.textContent = '退出';
+                leftButtonText.textContent = '返回';
                 rightButtonText.textContent = '同意并下载';
             } else if (md === 'e-link') {
                 prefixText.textContent = '已找到';
                 suffixText.textContent = '。';
-                leftButtonText.textContent = '退出';
+                leftButtonText.textContent = '返回';
                 rightButtonText.textContent = '同意并下载';
             }
 
@@ -171,9 +171,9 @@
             rightButton.href = tgt;
             rightButton.download = tgt.split('/').pop();
 
-            // 左侧按钮关闭标签页功能
+            // 左侧按钮返回上一页功能
             document.getElementById('left-button').addEventListener('click', function() {
-                window.close();
+                history.back();
             });
 
             // 右侧按钮点击后下载并关闭标签页
@@ -184,9 +184,9 @@
                 iframe.src = tgt;
                 document.body.appendChild(iframe);
                 
-                // 延迟关闭，给下载留出时间
+                // 延迟返回上一页，给下载留出时间
                 setTimeout(function() {
-                    window.close();
+                    history.back();
                 }, 1000);
             });
 
