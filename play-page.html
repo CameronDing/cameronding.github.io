@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>丁佳铭网页内置音频播放器</title>
+  <title>djm.pages.dev 内建音频播放器</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
   
   <style>
-    /* 基础样式重置 */
+    /* 基础样式保持不变 */
     * {
       margin: 0;
       padding: 0;
@@ -20,59 +20,44 @@
       overflow: hidden;
       background-color: #F9FAFB;
       color: #1F2937;
+      transition: background-color 0.3s ease;
     }
     body.dark {
       background-color: #111827;
       color: #F3F4F6;
     }
-    
-    /* 退出按钮 */
     .exit-btn {
       position: absolute;
       top: 20px;
       left: 20px;
       padding: 6px 12px;
       background-color: rgba(255, 255, 255, 0.8);
-      color: #374151;
-      border-radius: 4px;
-      font-size: 14px;
+      color: #3B82F6;
+      border-radius: 6px;
+      font-size: 20px;
       cursor: pointer;
       transition: all 0.2s ease;
       z-index: 100;
       text-decoration: none;
+      display: inline-flex;
+      align-items: center;
     }
-    .exit-btn:hover {
-      background-color: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    body.dark .exit-btn {
-      background-color: rgba(30, 41, 59, 0.8);
-      color: #E5E7EB;
-    }
-    body.dark .exit-btn:hover {
-      background-color: #374151;
-    }
-    
-    /* 标题区域 */
     .title-container {
       position: absolute;
       top: 20%;
       left: 50%;
       transform: translateX(-50%);
-      width: 100%;
+      width: 90%;
+      max-width: 1200px;
       text-align: center;
-      padding: 0 20px;
     }
     .audio-title {
-      font-size: 4rem; /* 5xl 对应4rem */
+      font-size: 4rem;
       font-weight: 500;
-      line-height: 1.2;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    
-    /* 进度条区域 */
     .progress-container {
       position: absolute;
       bottom: 35%;
@@ -88,11 +73,7 @@
       color: #6B7280;
       margin-bottom: 8px;
     }
-    body.dark .time-display {
-      color: #9CA3AF;
-    }
-    
-    /* 进度条样式 */
+    /* 进度条恢复可拖动 */
     .progress-slider {
       -webkit-appearance: none;
       width: 100%;
@@ -101,123 +82,142 @@
       background: #E2E8F0;
       outline: none;
     }
-    body.dark .progress-slider {
-      background: #374151;
-    }
-    /* 进度条已播放部分 */
     .progress-slider::-webkit-slider-runnable-track {
       -webkit-appearance: none;
       height: 3px;
-      border-radius: 2px;
       background: linear-gradient(to right, #3B82F6 var(--progress, 0%), #E2E8F0 var(--progress, 0%));
     }
-    body.dark .progress-slider::-webkit-slider-runnable-track {
-      background: linear-gradient(to right, #3B82F6 var(--progress, 0%), #374151 var(--progress, 0%));
-    }
-    /* 进度条滑块 */
     .progress-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       width: 14px;
       height: 14px;
       border-radius: 50%;
       background: #3B82F6;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      margin-top: -5.5px; /* 居中对齐轨道 */
+      cursor: pointer; /* 恢复可拖动光标 */
+      margin-top: -5.5px;
+      transition: transform 0.2s ease;
     }
     .progress-slider::-webkit-slider-thumb:hover {
-      transform: scale(1.05);
-      background: #2563EB;
+      transform: scale(1.2);
     }
-    
-    /* 播放按钮 */
-    .play-btn-container {
+    .controls-container {
       position: absolute;
       bottom: 10%;
       left: 50%;
       transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 20px;
     }
-    .play-btn {
-      width: 112px; /* w-28 = 112px */
-      height: 112px;
-      border-radius: 50%;
+    .skip-btn {
+      width: 80px;
+      height: 60px;
+      border-radius: 8px;
       background-color: #3B82F6;
       color: white;
       border: none;
-      outline: none;
       cursor: pointer;
       transition: all 0.25s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
-    .play-btn:hover {
+    .skip-btn:hover {
       background-color: #2563EB;
     }
-    .play-btn:active {
-      transform: scale(0.94);
+    /* 调大箭头图标 */
+    .skip-icon {
+      font-size: 2rem;
+    }
+    .play-btn {
+      width: 112px;
+      height: 112px;
+      border-radius: 50%;
+      background-color: #3B82F6;
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .play-icon {
-      font-size: 2.5rem; /* text-5xl = 2.5rem */
-      margin-left: 6px; /* ml-1.5 = 6px */
+      font-size: 2.5rem;
+      margin-left: 6px;
     }
-    
-    /* 移动端适配（≤768px） */
+    .loading-indicator {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2rem;
+      color: #3B82F6;
+      display: none;
+    }
+    .loading-indicator.active {
+      display: block;
+      animation: spin 1.5s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    /* 移动端适配 */
     @media (max-width: 768px) {
       .audio-title {
-        font-size: 1.5rem; /* text-2xl */
-      }
-      .title-container {
-        top: 25%;
-      }
-      .progress-container {
-        bottom: 40%;
-      }
-      .play-btn-container {
-        bottom: 15%;
+        font-size: 1.5rem;
       }
       .play-btn {
-        width: 72px; /* w-18 = 72px */
+        width: 72px;
         height: 72px;
       }
-      .play-icon {
-        font-size: 1.5rem; /* text-3xl */
-        margin-left: 4px;
+      .skip-btn {
+        width: 56px;
+        height: 40px;
+      }
+      .skip-icon {
+        font-size: 1.5rem;
       }
     }
   </style>
 </head>
 
 <body>
-  <!-- 退出按钮 -->
   <a href="https://djm.pages.dev/download-page.html" class="exit-btn">
     <i class="fa fa-sign-out mr-1"></i>退出播放
   </a>
   
-  <!-- 标题区域 -->
   <div class="title-container">
     <h1 class="audio-title" id="audioTitle">未指定音频</h1>
   </div>
   
-  <!-- 进度条区域 -->
   <div class="progress-container">
     <div class="time-display">
       <span id="currentTime">00:00</span>
       <span id="totalTime">00:00</span>
     </div>
+    <!-- 进度条恢复可拖动 -->
     <input type="range" id="progressBar" class="progress-slider" min="0" max="100" step="0.1" value="0">
   </div>
   
-  <!-- 播放按钮 -->
-  <div class="play-btn-container">
-    <button class="play-btn" id="playPauseBtn">
+  <div class="controls-container">
+    <!-- 添加title属性作为悬停提示 -->
+    <button class="skip-btn" id="rewindBtn" title="后退20秒">
+      <i class="fa fa-backward skip-icon"></i>
+    </button>
+    <button class="play-btn" id="playPauseBtn" title="暂停 / 播放">
       <i class="fa fa-play play-icon" id="playPauseIcon"></i>
+    </button>
+    <button class="skip-btn" id="forwardBtn" title="前进10秒">
+      <i class="fa fa-forward skip-icon"></i>
     </button>
   </div>
   
-  <!-- 音频元素 -->
-  <audio id="audioPlayer" style="display: none;"></audio>
+  <div class="loading-indicator" id="loadingIndicator">
+    <i class="fa fa-circle-o-notch fa-spin"></i>
+  </div>
+  
+  <audio id="audioPlayer" preload="metadata"></audio>
   
   <script>
     // DOM元素
@@ -228,41 +228,25 @@
     const currentTimeEl = document.getElementById('currentTime');
     const totalTimeEl = document.getElementById('totalTime');
     const audioTitle = document.getElementById('audioTitle');
-    const body = document.body;
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const rewindBtn = document.getElementById('rewindBtn');
+    const forwardBtn = document.getElementById('forwardBtn');
     
-    // 状态
+    // 状态变量
     let isPlaying = false;
     let audioLoaded = false;
-    let isFullscreen = false;
+    let totalDuration = 0;
+    let lastValidTime = 0;
+    let isDragging = false; // 用于跟踪进度条拖动状态
     
-    // 1. 深色模式适配
+    // 初始化深色模式
     function initDarkMode() {
       if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
-        body.classList.add('dark');
+        document.body.classList.add('dark');
       }
     }
     
-    // 2. 电脑端自动全屏
-    function enterFullscreen() {
-      if (window.innerWidth > 768 && !isFullscreen) {
-        const docEl = document.documentElement;
-        if (docEl.requestFullscreen) {
-          docEl.requestFullscreen();
-        } else if (docEl.webkitRequestFullscreen) {
-          docEl.webkitRequestFullscreen();
-        } else if (docEl.msRequestFullscreen) {
-          docEl.msRequestFullscreen();
-        }
-        isFullscreen = true;
-      }
-    }
-    
-    // 监听全屏状态变化
-    document.addEventListener('fullscreenchange', () => {
-      isFullscreen = !!document.fullscreenElement;
-    });
-    
-    // 3. 解析URL参数
+    // 解析URL参数
     function parseURLParams() {
       const params = new URLSearchParams(window.location.search);
       const result = {};
@@ -272,103 +256,222 @@
       return result;
     }
     
-    // 4. 处理参数（设置音频和标题）
+    // 处理音频加载
     function handleParams(params) {
-      // 设置标题
       audioTitle.textContent = params.title || '未指定音频';
-      // 设置音频源
       if (params.url) {
+        showLoading(true);
+        audioPlayer.src = '';
+        audioPlayer.load();
         audioPlayer.src = params.url;
-        // 音频加载完成后初始化进度条
-        audioPlayer.onloadedmetadata = () => {
-          audioLoaded = true;
-          progressBar.max = audioPlayer.duration; // 进度条max=音频总秒数
-          totalTimeEl.textContent = formatTime(audioPlayer.duration);
-          // 自动播放（如果参数指定）
-          if (params.autoplay === 'true') {
-            playAudio();
-          }
-        };
+        
+        audioPlayer.addEventListener('loadedmetadata', onMetadataLoaded);
+        audioPlayer.addEventListener('error', onAudioError);
+        audioPlayer.addEventListener('timeupdate', trackValidTime);
       }
     }
     
-    // 5. 时间格式化（秒→MM:SS）
+    // 元数据加载完成
+    function onMetadataLoaded() {
+      audioLoaded = true;
+      totalDuration = audioPlayer.duration;
+      totalTimeEl.textContent = formatTime(totalDuration);
+      showLoading(false);
+      lastValidTime = 0;
+    }
+    
+    // 音频错误处理
+    function onAudioError(e) {
+      showLoading(false);
+      const errors = {
+        1: "加载被中止",
+        2: "网络错误（可能不支持跳转）",
+        3: "音频损坏或无法解码",
+        4: "格式不支持（建议用MP3）"
+      };
+      alert(`音频错误：${errors[e.target.error.code] || '未知错误'}`);
+    }
+    
+    // 跟踪有效播放时间
+    function trackValidTime() {
+      if (audioLoaded && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime > 0 && !isDragging) {
+        lastValidTime = audioPlayer.currentTime;
+      }
+      updateProgress();
+    }
+    
+    // 时间格式化
     function formatTime(seconds) {
+      if (isNaN(seconds) || seconds < 0) return "00:00";
       const mins = Math.floor(seconds / 60);
       const secs = Math.floor(seconds % 60);
       return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
     
-    // 6. 更新进度条（颜色+位置）
+    // 更新进度条
     function updateProgress() {
-      if (audioLoaded) {
-        // 计算进度百分比
-        const progressPercent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
-        // 设置进度条已播放部分颜色
+      if (audioLoaded && totalDuration > 0) {
+        const progressPercent = (lastValidTime / totalDuration) * 100;
         progressBar.style.setProperty('--progress', `${progressPercent}%`);
-        // 同步进度条位置
-        progressBar.value = audioPlayer.currentTime;
-        // 更新当前时间显示
-        currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
+        progressBar.value = progressPercent;
+        currentTimeEl.textContent = formatTime(lastValidTime);
       }
     }
     
-    // 7. 播放/暂停控制
+    // 播放/暂停控制
     function playAudio() {
-      audioPlayer.play().then(() => {
-        isPlaying = true;
-        playPauseIcon.classList.replace('fa-play', 'fa-pause');
-      }).catch(error => {
-        alert(`播放失败：${error.message}`);
-      });
+      if (!audioLoaded) return;
+      
+      showLoading(true);
+      audioPlayer.play()
+        .then(() => {
+          isPlaying = true;
+          playPauseIcon.classList.replace('fa-play', 'fa-pause');
+          showLoading(false);
+        })
+        .catch(error => {
+          showLoading(false);
+          alert(`播放失败：${error.message}`);
+        });
     }
     
     function pauseAudio() {
+      if (!audioLoaded) return;
+      
       audioPlayer.pause();
       isPlaying = false;
       playPauseIcon.classList.replace('fa-pause', 'fa-play');
     }
     
-    // 8. 进度条拖动控制
-    function handleProgressDrag() {
-      if (audioLoaded) {
-        // 拖动时更新播放时间和进度条颜色
-        const targetTime = parseFloat(progressBar.value);
+    // 后退20秒（修改为20秒）
+    function rewind20s() {
+      if (!audioLoaded) return;
+      
+      const newTime = Math.max(0, lastValidTime - 20);
+      setAudioTime(newTime);
+    }
+    
+    // 前进10秒
+    function forward10s() {
+      if (!audioLoaded) return;
+      
+      const newTime = Math.min(totalDuration, lastValidTime + 10);
+      setAudioTime(newTime);
+    }
+    
+    // 安全设置音频时间
+    function setAudioTime(targetTime) {
+      if (!audioLoaded) return;
+      
+      showLoading(true);
+      const wasPlaying = isPlaying;
+      
+      audioPlayer.pause();
+      
+      requestAnimationFrame(() => {
         audioPlayer.currentTime = targetTime;
-        const progressPercent = (targetTime / audioPlayer.duration) * 100;
-        progressBar.style.setProperty('--progress', `${progressPercent}%`);
-        currentTimeEl.textContent = formatTime(targetTime);
-        // 拖动结束后如果是播放状态，继续播放
-        if (isPlaying) {
-          audioPlayer.play().catch(err => console.error('拖动后播放失败：', err));
-        }
+        
+        setTimeout(() => {
+          if (Math.abs(audioPlayer.currentTime - targetTime) > 1) {
+            audioPlayer.currentTime = lastValidTime;
+          } else {
+            lastValidTime = targetTime;
+          }
+          
+          updateProgress();
+          showLoading(false);
+          
+          if (wasPlaying) {
+            audioPlayer.play();
+          }
+        }, 300);
+      });
+    }
+    
+    // 进度条拖动控制
+    function handleProgressStart() {
+      if (!audioLoaded || totalDuration <= 0) return;
+      
+      isDragging = true;
+      if (isPlaying) {
+        audioPlayer.pause();
       }
     }
     
-    // 9. 音频播放结束处理
-    function handleAudioEnded() {
-      pauseAudio();
-      // 重置进度条
-      progressBar.value = 0;
-      progressBar.style.setProperty('--progress', '0%');
-      audioPlayer.currentTime = 0;
-      currentTimeEl.textContent = '00:00';
+    function handleProgressDrag() {
+      if (!audioLoaded || !isDragging || totalDuration <= 0) return;
+      
+      const progressPercent = parseFloat(progressBar.value);
+      const clampedPercent = Math.max(0, Math.min(100, progressPercent));
+      const targetTime = (clampedPercent / 100) * totalDuration;
+      
+      progressBar.style.setProperty('--progress', `${clampedPercent}%`);
+      currentTimeEl.textContent = formatTime(targetTime);
     }
     
-    // 10. 绑定事件
+    function handleProgressEnd() {
+      if (!audioLoaded || !isDragging || totalDuration <= 0) {
+        isDragging = false;
+        return;
+      }
+      
+      const progressPercent = parseFloat(progressBar.value);
+      const clampedPercent = Math.max(0, Math.min(100, progressPercent));
+      const targetTime = (clampedPercent / 100) * totalDuration;
+      
+      setAudioTime(targetTime);
+      isDragging = false;
+    }
+    
+    // 播放结束处理
+    function handleAudioEnded() {
+      pauseAudio();
+      lastValidTime = 0;
+      audioPlayer.currentTime = 0;
+      updateProgress();
+    }
+    
+    // 显示加载状态
+    function showLoading(show) {
+      loadingIndicator.classList.toggle('active', show);
+    }
+    
+    // 绑定事件
     function bindEvents() {
-      // 播放/暂停按钮点击
-      playPauseBtn.addEventListener('click', () => {
-        isPlaying ? pauseAudio() : playAudio();
+      playPauseBtn.addEventListener('click', () => isPlaying ? pauseAudio() : playAudio());
+      rewindBtn.addEventListener('click', rewind20s);
+      forwardBtn.addEventListener('click', forward10s);
+      
+      // 进度条事件
+      progressBar.addEventListener('mousedown', handleProgressStart);
+      progressBar.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        handleProgressStart();
       });
-      // 进度条拖动（实时更新）
       progressBar.addEventListener('input', handleProgressDrag);
-      // 进度条拖动结束
-      progressBar.addEventListener('change', handleProgressDrag);
-      // 音频播放时间更新（每秒更新进度）
-      audioPlayer.addEventListener('timeupdate', updateProgress);
-      // 音频播放结束
+      progressBar.addEventListener('mouseup', handleProgressEnd);
+      progressBar.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handleProgressEnd();
+      });
+      
       audioPlayer.addEventListener('ended', handleAudioEnded);
+      audioPlayer.addEventListener('waiting', () => showLoading(true));
+      audioPlayer.addEventListener('playing', () => showLoading(false));
+      
+      // 键盘控制
+      document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          isPlaying ? pauseAudio() : playAudio();
+        } else if (e.code === 'ArrowLeft') {
+          e.preventDefault();
+          rewind20s();
+        } else if (e.code === 'ArrowRight') {
+          e.preventDefault();
+          forward10s();
+        }
+      });
     }
     
     // 初始化
@@ -377,10 +480,6 @@
       const params = parseURLParams();
       handleParams(params);
       bindEvents();
-      // 电脑端延迟进入全屏（确保DOM加载完成）
-      if (window.innerWidth > 768) {
-        setTimeout(enterFullscreen, 100);
-      }
     });
   </script>
 </body>
