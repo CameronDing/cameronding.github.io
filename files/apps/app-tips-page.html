@@ -131,13 +131,20 @@
         const tgt = getUrlParameter('tgt') || 'https://djm.pages.dev/files/apps/apps-tips.txt';
         const md = getUrlParameter('md') || 'download';
 
-        // 如果是fstelnk模式，直接触发下载并关闭页面
+        // 如果是fstelnk模式，直接触发下载并返回上一页
         if (md === 'fstelnk') {
-            // 创建一个隐藏的iframe来触发下载
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.src = tgt;
-            document.body.appendChild(iframe);
+            // 创建一个隐藏的a标签来触发下载
+            const link = document.createElement('a');
+            link.href = tgt;
+            link.download = tgt.split('/').pop();
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            
+            // 模拟点击下载
+            link.click();
+            
+            // 移除a标签
+            document.body.removeChild(link);
             
             // 延迟返回上一页，给下载留出时间
             setTimeout(function() {
@@ -176,13 +183,23 @@
                 history.back();
             });
 
-            // 右侧按钮点击后下载并关闭标签页
+            // 右侧按钮点击后下载并返回上一页
             rightButton.addEventListener('click', function(e) {
-                // 创建一个隐藏的iframe来触发下载
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.src = tgt;
-                document.body.appendChild(iframe);
+                // 阻止默认链接行为
+                e.preventDefault();
+                
+                // 创建一个隐藏的a标签来触发下载
+                const link = document.createElement('a');
+                link.href = tgt;
+                link.download = tgt.split('/').pop();
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                
+                // 模拟点击下载
+                link.click();
+                
+                // 移除a标签
+                document.body.removeChild(link);
                 
                 // 延迟返回上一页，给下载留出时间
                 setTimeout(function() {
