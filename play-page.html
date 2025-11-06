@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>djm.pages.dev 内建音频播放器</title>
+  <title>丁佳铭网页内置音频播放器</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
   
   <style>
-    /* 基础样式保持不变 */
+    /* 保持原有样式不变 */
     * {
       margin: 0;
       padding: 0;
@@ -73,7 +73,6 @@
       color: #6B7280;
       margin-bottom: 8px;
     }
-    /* 进度条恢复可拖动 */
     .progress-slider {
       -webkit-appearance: none;
       width: 100%;
@@ -93,7 +92,7 @@
       height: 14px;
       border-radius: 50%;
       background: #3B82F6;
-      cursor: pointer; /* 恢复可拖动光标 */
+      cursor: pointer;
       margin-top: -5.5px;
       transition: transform 0.2s ease;
     }
@@ -125,7 +124,6 @@
     .skip-btn:hover {
       background-color: #2563EB;
     }
-    /* 调大箭头图标 */
     .skip-icon {
       font-size: 2rem;
     }
@@ -158,11 +156,22 @@
       display: block;
       animation: spin 1.5s linear infinite;
     }
+    .network-hint {
+      position: absolute;
+      bottom: 5%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.9rem;
+      color: #6B7280;
+      display: none;
+    }
+    .network-hint.active {
+      display: block;
+    }
     @keyframes spin {
       from { transform: translate(-50%, -50%) rotate(0deg); }
       to { transform: translate(-50%, -50%) rotate(360deg); }
     }
-    /* 移动端适配 */
     @media (max-width: 768px) {
       .audio-title {
         font-size: 1.5rem;
@@ -196,16 +205,14 @@
       <span id="currentTime">00:00</span>
       <span id="totalTime">00:00</span>
     </div>
-    <!-- 进度条恢复可拖动 -->
     <input type="range" id="progressBar" class="progress-slider" min="0" max="100" step="0.1" value="0">
   </div>
   
   <div class="controls-container">
-    <!-- 添加title属性作为悬停提示 -->
     <button class="skip-btn" id="rewindBtn" title="后退20秒">
       <i class="fa fa-backward skip-icon"></i>
     </button>
-    <button class="play-btn" id="playPauseBtn" title="暂停 / 播放">
+    <button class="play-btn" id="playPauseBtn">
       <i class="fa fa-play play-icon" id="playPauseIcon"></i>
     </button>
     <button class="skip-btn" id="forwardBtn" title="前进10秒">
@@ -217,7 +224,10 @@
     <i class="fa fa-circle-o-notch fa-spin"></i>
   </div>
   
-  <audio id="audioPlayer" preload="metadata"></audio>
+  <!-- 网络环境提示 -->
+  <div class="network-hint" id="networkHint">网络音频加载中，首次跳转可能需要缓存时间...</div>
+  
+  <audio id="audioPlayer" preload="auto"></audio>
   
   <script>
     // DOM元素
@@ -231,13 +241,15 @@
     const loadingIndicator = document.getElementById('loadingIndicator');
     const rewindBtn = document.getElementById('rewindBtn');
     const forwardBtn = document.getElementById('forwardBtn');
+    const networkHint = document.getElementById('networkHint');
     
     // 状态变量
     let isPlaying = false;
     let audioLoaded = false;
     let totalDuration = 0;
     let lastValidTime = 0;
-    let isDragging = false; // 用于跟踪进度条拖动状态
+    let isDragging = false;
+    let isBuffering = false; // 标记是否正在缓冲
     
     // 初始化深色模式
     function initDarkMode() {
@@ -256,18 +268,60 @@
       return result;
     }
     
-    // 处理音频加载
-    function handleParams(params) {
+    // 检查服务器是否支持字节范围请求（关键：决定能否跳转）
+    function checkRangeSupport(url) {
+      return new Promise((resolve) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('HEAD', url);
+        xhr.onload = () => {
+          const acceptRanges = xhr.getResponseHeader('Accept-Ranges') === 'bytes';
+          const contentLength = xhr.getResponseHeader('Content-Length');
+          resolve({ 
+            support: acceptRanges && !!contentLength,
+            contentLength: contentLength
+          });
+        };
+        xhr.onerror = () => resolve({ support: false });
+        xhr.send();
+      });
+    }
+    
+    // 处理音频加载（网络环境专用）
+    async function handleParams(params) {
       audioTitle.textContent = params.title || '未指定音频';
       if (params.url) {
         showLoading(true);
+        networkHint.classList.add('active');
+        
+        // 关键步骤1：检查服务器是否支持跳转
+        const rangeSupport = await checkRangeSupport(params.url);
+        if (!rangeSupport.support) {
+          alert('注意：当前音频服务器不支持直接跳转，首次跳转可能需要较长时间缓冲');
+        }
+        
+        // 关键步骤2：使用缓存策略加载音频
         audioPlayer.src = '';
         audioPlayer.load();
         audioPlayer.src = params.url;
+        audioPlayer.crossOrigin = "anonymous"; // 允许跨域缓存
         
+        // 监听元数据加载
         audioPlayer.addEventListener('loadedmetadata', onMetadataLoaded);
+        // 监听缓存进度（网络环境专用）
+        audioPlayer.addEventListener('progress', updateBufferProgress);
         audioPlayer.addEventListener('error', onAudioError);
         audioPlayer.addEventListener('timeupdate', trackValidTime);
+      }
+    }
+    
+    // 显示缓冲进度（网络环境专用）
+    function updateBufferProgress() {
+      if (audioLoaded && audioPlayer.buffered.length > 0) {
+        const bufferedEnd = audioPlayer.buffered.end(audioPlayer.buffered.length - 1);
+        // 当缓冲足够时隐藏提示
+        if (bufferedEnd / totalDuration > 0.5) {
+          networkHint.classList.remove('active');
+        }
       }
     }
     
@@ -283,11 +337,12 @@
     // 音频错误处理
     function onAudioError(e) {
       showLoading(false);
+      networkHint.classList.remove('active');
       const errors = {
         1: "加载被中止",
-        2: "网络错误（可能不支持跳转）",
+        2: "网络错误（请检查链接是否有效）",
         3: "音频损坏或无法解码",
-        4: "格式不支持（建议用MP3）"
+        4: "格式不支持（建议使用MP3格式）"
       };
       alert(`音频错误：${errors[e.target.error.code] || '未知错误'}`);
     }
@@ -343,54 +398,89 @@
       playPauseIcon.classList.replace('fa-pause', 'fa-play');
     }
     
-    // 后退20秒（修改为20秒）
+    // 后退20秒
     function rewind20s() {
-      if (!audioLoaded) return;
-      
-      const newTime = Math.max(0, lastValidTime - 20);
-      setAudioTime(newTime);
+      if (!audioLoaded || isBuffering) return;
+      jumpToTime(lastValidTime - 20);
     }
     
     // 前进10秒
     function forward10s() {
-      if (!audioLoaded) return;
-      
-      const newTime = Math.min(totalDuration, lastValidTime + 10);
-      setAudioTime(newTime);
+      if (!audioLoaded || isBuffering) return;
+      jumpToTime(lastValidTime + 10);
     }
     
-    // 安全设置音频时间
-    function setAudioTime(targetTime) {
+    // 进度条跳转
+    function jumpToProgress() {
+      if (!audioLoaded || isBuffering) return;
+      const progressPercent = parseFloat(progressBar.value);
+      const targetTime = (progressPercent / 100) * totalDuration;
+      jumpToTime(targetTime);
+    }
+    
+    // 网络环境专用跳转逻辑（核心修复）
+    function jumpToTime(targetTime) {
       if (!audioLoaded) return;
       
-      showLoading(true);
-      const wasPlaying = isPlaying;
+      // 限制时间范围
+      const clampedTime = Math.max(0, Math.min(totalDuration, targetTime));
+      if (Math.abs(clampedTime - lastValidTime) < 1) return; // 忽略微小调整
       
+      showLoading(true);
+      isBuffering = true;
+      const wasPlaying = isPlaying;
       audioPlayer.pause();
       
-      requestAnimationFrame(() => {
-        audioPlayer.currentTime = targetTime;
+      // 关键策略：分阶段加载（针对不支持范围请求的服务器）
+      const loadInChunks = () => {
+        // 先尝试直接跳转
+        audioPlayer.currentTime = clampedTime;
         
+        // 检查跳转是否成功
         setTimeout(() => {
-          if (Math.abs(audioPlayer.currentTime - targetTime) > 1) {
-            audioPlayer.currentTime = lastValidTime;
-          } else {
-            lastValidTime = targetTime;
+          // 情况1：跳转成功（时间误差小于1秒）
+          if (Math.abs(audioPlayer.currentTime - clampedTime) < 1) {
+            lastValidTime = clampedTime;
+            updateProgress();
+            isBuffering = false;
+            showLoading(false);
+            if (wasPlaying) audioPlayer.play();
+            return;
           }
           
-          updateProgress();
-          showLoading(false);
-          
-          if (wasPlaying) {
+          // 情况2：跳转失败，使用渐进式缓冲（针对流式音频）
+          if (audioPlayer.currentTime < clampedTime) {
+            // 先播放到目标位置附近再暂停（模拟跳转）
             audioPlayer.play();
+            const checkPoint = setInterval(() => {
+              if (audioPlayer.currentTime >= clampedTime - 1 || !isBuffering) {
+                clearInterval(checkPoint);
+                audioPlayer.pause();
+                lastValidTime = audioPlayer.currentTime;
+                updateProgress();
+                isBuffering = false;
+                showLoading(false);
+                if (wasPlaying) audioPlayer.play();
+              }
+            }, 500);
+          } else {
+            // 异常情况处理
+            lastValidTime = clampedTime;
+            updateProgress();
+            isBuffering = false;
+            showLoading(false);
+            if (wasPlaying) audioPlayer.play();
           }
-        }, 300);
-      });
+        }, 1000); // 给服务器1秒响应时间
+      };
+      
+      // 执行分阶段加载
+      loadInChunks();
     }
     
     // 进度条拖动控制
     function handleProgressStart() {
-      if (!audioLoaded || totalDuration <= 0) return;
+      if (!audioLoaded || totalDuration <= 0 || isBuffering) return;
       
       isDragging = true;
       if (isPlaying) {
@@ -415,12 +505,8 @@
         return;
       }
       
-      const progressPercent = parseFloat(progressBar.value);
-      const clampedPercent = Math.max(0, Math.min(100, progressPercent));
-      const targetTime = (clampedPercent / 100) * totalDuration;
-      
-      setAudioTime(targetTime);
       isDragging = false;
+      jumpToProgress();
     }
     
     // 播放结束处理
