@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>指令查找工具</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 统一的 Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        primaryLight: '#E8F3FF',
+                        primaryDark: '#0E42D2',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'custom': '0 4px 20px rgba(22, 93, 255, 0.15)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-all-300 {
+                transition: all 300ms ease-in-out;
+            }
+            .bg-gradient {
+                background: linear-gradient(135deg, #165DFF 0%, #0E42D2 100%);
+            }
+        }
+    </style>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        .search-container {
+            max-width: 600px;
+        }
+        
+        .search-input {
+            border: 2px solid #165DFF;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: all 300ms ease-in-out;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #0E42D2;
+            box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.2);
+        }
+        
+        .search-button {
+            background-color: #165DFF;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 300ms ease-in-out;
+        }
+        
+        .search-button:hover {
+            background-color: #0E42D2;
+            transform: translateY(-2px);
+        }
+        
+        .search-button:active {
+            transform: translateY(0);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            animation: modalFadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-button {
+            background-color: #165DFF;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 300ms ease-in-out;
+        }
+        
+        .modal-button:hover {
+            background-color: #0E42D2;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="search-container w-full mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-8 text-primary">输入指令</h1>
+        
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <input type="text" id="search-input" class="search-input flex-grow" placeholder="请输入查找内容...">
+            <button id="search-button" class="search-button whitespace-nowrap">
+                <i class="fa fa-search mr-2"></i>查找
+            </button>
+        </div>
+    </div>
+    
+    <!-- 结果提示模态框 -->
+    <div id="result-modal" class="modal">
+        <div class="modal-content text-center">
+            <p id="modal-message" class="text-xl mb-6"></p>
+            <button id="modal-button" class="modal-button">确定</button>
+        </div>
+    </div>
+
+    <script>
+        // 存储配置数据的对象
+        let configData = {};
+        
+        // 页面加载完成后读取config.dict文件
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConfigFile();
+            
+            // 绑定查找按钮点击事件
+            document.getElementById('search-button').addEventListener('click', searchConfig);
+            
+            // 绑定回车键事件
+            document.getElementById('search-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchConfig();
+                }
+            });
+            
+            // 绑定模态框按钮点击事件
+            document.getElementById('modal-button').addEventListener('click', function() {
+                document.getElementById('result-modal').style.display = 'none';
+                
+                // 如果是找到结果，点击确定后跳转到对应页面
+                const redirectUrl = this.getAttribute('data-redirect');
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                }
+            });
+        });
+        
+        // 读取config.dict文件 - 兼容多种环境
+        function loadConfigFile() {
+            // 首先尝试使用fetch API
+            if (window.fetch) {
+                fetch('config.dict')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(content => {
+                        parseConfigContent(content);
+                    })
+                    .catch(error => {
+                        console.warn('Fetch方法失败，尝试使用XMLHttpRequest:', error);
+                        // 如果fetch失败，尝试使用XMLHttpRequest
+                        loadConfigWithXHR();
+                    });
+            } else {
+                // 如果浏览器不支持fetch，直接使用XMLHttpRequest
+                loadConfigWithXHR();
+            }
+        }
+        
+        // 使用XMLHttpRequest读取配置文件
+        function loadConfigWithXHR() {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', 'config.dict', true);
+            
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    parseConfigContent(xhr.responseText);
+                } else {
+                    console.error('XMLHttpRequest加载失败，状态码:', xhr.status);
+                    showModal('错误', '无法加载配置文件，请检查文件是否存在或服务器配置。');
+                }
+            };
+            
+            xhr.onerror = function() {
+                console.error('XMLHttpRequest发生网络错误');
+                // 对于本地文件，尝试使用FileReader API（需要用户选择文件）
+                showModal('提示', '无法自动加载配置文件，请手动选择config.dict文件。', null, true);
+            };
+            
+            xhr.send();
+        }
+        
+        // 解析配置文件内容
+        function parseConfigContent(content) {
+            try {
+                const lines = content.split('\n');
+                
+                // 解析每一行并存储到对象中（快速查找）
+                lines.forEach(line => {
+                    // 跳过空行
+                    if (!line.trim()) return;
+                    
+                    // 匹配格式：{ai}:{bi}:{ci}:{di}
+                    const match = line.match(/^\{(.+)\}:\{(.+)\}:\{(.+)\}:\{(.+)\}$/);
+                    if (match) {
+                        const ai = match[1];
+                        const bi = match[2];
+                        const ci = match[3];
+                        const di = match[4];
+                        
+                        configData[ai] = { bi, ci, di };
+                    } else {
+                        console.warn('忽略无效格式的行:', line);
+                    }
+                });
+                
+                console.log('配置文件加载成功，共加载', Object.keys(configData).length, '条记录');
+                
+                // 如果没有加载到任何记录，提示用户
+                if (Object.keys(configData).length === 0) {
+                    showModal('提示', '配置文件格式不正确或为空，请检查文件内容。');
+                }
+            } catch (error) {
+                console.error('解析配置文件失败:', error);
+                showModal('错误', '解析配置文件失败，请检查文件格式。');
+            }
+        }
+        
+        // 查找配置
+        function searchConfig() {
+            const input = document.getElementById('search-input').value.trim();
+            
+            if (!input) {
+                showModal('提示', '请输入查找内容');
+                return;
+            }
+            
+            // 快速查找（对象属性访问，O(1)时间复杂度）
+            if (configData.hasOwnProperty(input)) {
+                const { bi, ci, di } = configData[input];
+                
+                const url = `/files/apps/app-tips-page.html?nm=${encodeURIComponent(bi)}&tgt=${encodeURIComponent(ci)}&md=${encodeURIComponent(di)}`;
+                
+                showModal(
+                    '找到对应文件', 
+                    '已找到对应的文件。点击确定后跳转到下载页面。', 
+                    url
+                );
+            } else {
+                showModal('未找到', '未找到对应的文件。');
+            }
+        }
+        
+        // 显示模态框
+        function showModal(title, message, redirectUrl = null, showFileInput = false) {
+            const modal = document.getElementById('result-modal');
+            const modalMessage = document.getElementById('modal-message');
+            const modalButton = document.getElementById('modal-button');
+            
+            // 设置模态框标题和消息
+            modalMessage.innerHTML = `<strong>${title}:</strong> ${message}`;
+            
+            // 隐藏文件输入（如果存在）
+            const existingFileInput = document.getElementById('modal-file-input');
+            if (existingFileInput) {
+                existingFileInput.remove();
+            }
+            
+            // 如果需要显示文件输入
+            if (showFileInput) {
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.id = 'modal-file-input';
+                fileInput.accept = '.dict';
+                fileInput.className = 'mt-4 mb-4';
+                
+                fileInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            parseConfigContent(e.target.result);
+                            modal.style.display = 'none';
+                        };
+                        reader.readAsText(file);
+                    }
+                });
+                
+                modalMessage.parentNode.insertBefore(fileInput, modalButton.parentNode);
+            }
+            
+            // 设置按钮文本和跳转URL
+            if (redirectUrl) {
+                modalButton.textContent = '确定';
+                modalButton.setAttribute('data-redirect', redirectUrl);
+            } else {
+                modalButton.textContent = '确定';
+                modalButton.removeAttribute('data-redirect');
+            }
+            
+            // 显示模态框
+            modal.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
