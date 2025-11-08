@@ -156,18 +156,6 @@
       display: block;
       animation: spin 1.5s linear infinite;
     }
-    .network-hint {
-      position: absolute;
-      bottom: 5%;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 0.9rem;
-      color: #6B7280;
-      display: none;
-    }
-    .network-hint.active {
-      display: block;
-    }
     @keyframes spin {
       from { transform: translate(-50%, -50%) rotate(0deg); }
       to { transform: translate(-50%, -50%) rotate(360deg); }
@@ -224,9 +212,6 @@
     <i class="fa fa-circle-o-notch fa-spin"></i>
   </div>
   
-  <!-- 网络环境提示 -->
-  <div class="network-hint" id="networkHint">网络音频加载中，首次跳转可能需要缓存时间...</div>
-  
   <audio id="audioPlayer" preload="auto"></audio>
   
   <script>
@@ -241,7 +226,6 @@
     const loadingIndicator = document.getElementById('loadingIndicator');
     const rewindBtn = document.getElementById('rewindBtn');
     const forwardBtn = document.getElementById('forwardBtn');
-    const networkHint = document.getElementById('networkHint');
     
     // 状态变量
     let isPlaying = false;
@@ -249,7 +233,7 @@
     let totalDuration = 0;
     let lastValidTime = 0;
     let isDragging = false;
-    let isBuffering = false; // 标记是否正在缓冲
+    let isBuffering = false;
     
     // 初始化深色模式
     function initDarkMode() {
@@ -268,7 +252,7 @@
       return result;
     }
     
-    // 检查服务器是否支持字节范围请求（关键：决定能否跳转）
+    // 检查服务器是否支持字节范围请求
     function checkRangeSupport(url) {
       return new Promise((resolve) => {
         const xhr = new XMLHttpRequest();
@@ -286,43 +270,31 @@
       });
     }
     
-    // 处理音频加载（网络环境专用）
+    // 处理音频加载
     async function handleParams(params) {
       audioTitle.textContent = params.title || '未指定音频';
       if (params.url) {
         showLoading(true);
-        networkHint.classList.add('active');
         
-        // 关键步骤1：检查服务器是否支持跳转
-        const rangeSupport = await checkRangeSupport(params.url);
-        if (!rangeSupport.support) {
-          alert('注意：当前音频服务器不支持直接跳转，首次跳转可能需要较长时间缓冲');
-        }
+        // 检查服务器支持但不弹窗
+        await checkRangeSupport(params.url);
         
-        // 关键步骤2：使用缓存策略加载音频
+        // 加载音频
         audioPlayer.src = '';
         audioPlayer.load();
         audioPlayer.src = params.url;
-        audioPlayer.crossOrigin = "anonymous"; // 允许跨域缓存
+        audioPlayer.crossOrigin = "anonymous";
         
-        // 监听元数据加载
         audioPlayer.addEventListener('loadedmetadata', onMetadataLoaded);
-        // 监听缓存进度（网络环境专用）
         audioPlayer.addEventListener('progress', updateBufferProgress);
         audioPlayer.addEventListener('error', onAudioError);
         audioPlayer.addEventListener('timeupdate', trackValidTime);
       }
     }
     
-    // 显示缓冲进度（网络环境专用）
+    // 缓冲进度更新
     function updateBufferProgress() {
-      if (audioLoaded && audioPlayer.buffered.length > 0) {
-        const bufferedEnd = audioPlayer.buffered.end(audioPlayer.buffered.length - 1);
-        // 当缓冲足够时隐藏提示
-        if (bufferedEnd / totalDuration > 0.5) {
-          networkHint.classList.remove('active');
-        }
-      }
+      // 仅内部处理，不显示提示
     }
     
     // 元数据加载完成
@@ -334,17 +306,11 @@
       lastValidTime = 0;
     }
     
-    // 音频错误处理
+    // 音频错误处理（不弹窗）
     function onAudioError(e) {
       showLoading(false);
-      networkHint.classList.remove('active');
-      const errors = {
-        1: "加载被中止",
-        2: "网络错误（请检查链接是否有效）",
-        3: "音频损坏或无法解码",
-        4: "格式不支持（建议使用MP3格式）"
-      };
-      alert(`音频错误：${errors[e.target.error.code] || '未知错误'}`);
+      // 仅在控制台输出错误，不打扰用户
+      console.error('音频错误代码:', e.target.error.code);
     }
     
     // 跟踪有效播放时间
@@ -386,7 +352,7 @@
         })
         .catch(error => {
           showLoading(false);
-          alert(`播放失败：${error.message}`);
+          console.error('播放失败:', error);
         });
     }
     
@@ -418,27 +384,22 @@
       jumpToTime(targetTime);
     }
     
-    // 网络环境专用跳转逻辑（核心修复）
+    // 跳转逻辑
     function jumpToTime(targetTime) {
       if (!audioLoaded) return;
       
-      // 限制时间范围
       const clampedTime = Math.max(0, Math.min(totalDuration, targetTime));
-      if (Math.abs(clampedTime - lastValidTime) < 1) return; // 忽略微小调整
+      if (Math.abs(clampedTime - lastValidTime) < 1) return;
       
       showLoading(true);
       isBuffering = true;
       const wasPlaying = isPlaying;
       audioPlayer.pause();
       
-      // 关键策略：分阶段加载（针对不支持范围请求的服务器）
       const loadInChunks = () => {
-        // 先尝试直接跳转
         audioPlayer.currentTime = clampedTime;
         
-        // 检查跳转是否成功
         setTimeout(() => {
-          // 情况1：跳转成功（时间误差小于1秒）
           if (Math.abs(audioPlayer.currentTime - clampedTime) < 1) {
             lastValidTime = clampedTime;
             updateProgress();
@@ -448,9 +409,7 @@
             return;
           }
           
-          // 情况2：跳转失败，使用渐进式缓冲（针对流式音频）
           if (audioPlayer.currentTime < clampedTime) {
-            // 先播放到目标位置附近再暂停（模拟跳转）
             audioPlayer.play();
             const checkPoint = setInterval(() => {
               if (audioPlayer.currentTime >= clampedTime - 1 || !isBuffering) {
@@ -464,17 +423,15 @@
               }
             }, 500);
           } else {
-            // 异常情况处理
             lastValidTime = clampedTime;
             updateProgress();
             isBuffering = false;
             showLoading(false);
             if (wasPlaying) audioPlayer.play();
           }
-        }, 1000); // 给服务器1秒响应时间
+        }, 1000);
       };
       
-      // 执行分阶段加载
       loadInChunks();
     }
     
