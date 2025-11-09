@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>指令查找工具</title>
+    <title>djm.pages.dev 外部接口 - djm.pages.dev/e/</title>
     <!-- Tailwind CSS v3 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
@@ -141,10 +141,10 @@
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
     <div class="search-container w-full mx-auto">
-        <h1 class="text-3xl font-bold text-center mb-8 text-primary">输入指令</h1>
+        <h1 class="text-5xl font-bold text-center mb-8 text-primary">输入指令</h1>
         
         <div class="flex flex-col sm:flex-row gap-4 mb-8">
-            <input type="text" id="search-input" class="search-input flex-grow" placeholder="请输入查找内容...">
+            <input type="text" id="search-input" class="search-input flex-grow" placeholder="请输入查找指令...">
             <button id="search-button" class="search-button whitespace-nowrap">
                 <i class="fa fa-search mr-2"></i>查找
             </button>
@@ -290,15 +290,13 @@
                 
                 // 如果没有加载到任何记录，提供更详细的错误信息
                 if (Object.keys(configData).length === 0) {
-                    const errorMessage = `配置文件格式不正确或为空。请确保每行格式为：{ai}:{bi}:{ci}:{di}\n\n` +
-                                        `配置文件包含 ${lines.length} 行，其中 ${lines.length - Object.keys(configData).length} 行格式无效。\n` +
-                                        `请打开浏览器开发者工具（按F12）查看控制台获取更详细的错误信息。`;
+                    const errorMessage = `配置文件格式不正确或为空。`;
                     
                     showModal('提示', errorMessage);
                 }
             } catch (error) {
                 console.error('解析配置文件失败:', error);
-                showModal('错误', `解析配置文件失败: ${error.message}\n\n请打开浏览器开发者工具（按F12）查看控制台获取更多信息。`);
+                showModal('错误', `解析配置文件失败。`);
             }
         }
         
@@ -314,16 +312,29 @@
             // 快速查找（对象属性访问，O(1)时间复杂度）
             if (configData.hasOwnProperty(input)) {
                 const { bi, ci, di } = configData[input];
+                let url = '';
+                let message = '';
                 
-                const url = `/files/apps/app-tips-page.html?nm=${encodeURIComponent(bi)}&tgt=${encodeURIComponent(ci)}&md=${encodeURIComponent(di)}`;
+                // 根据di的值决定跳转方式
+                if (di === 'fstelnk') {
+                    // 原来的跳转方法
+                    url = `/files/apps/app-tips-page.html?nm=${encodeURIComponent(bi)}&tgt=${encodeURIComponent(ci)}&md=${encodeURIComponent(di)}`;
+                    message = '已找到对应的文件。';
+                } else {
+                    // 新的跳转方法，添加md=e-link参数
+                    url = `/files/apps/app-tips-page.html?nm=${encodeURIComponent(bi)}&tgt=${encodeURIComponent(ci)}&txt=${encodeURIComponent(di)}&md=e-link`;
+                    message = '已找到对应的文件。';
+                }
+                
+                console.log(`跳转URL: ${url}`);
                 
                 showModal(
-                    '找到对应文件', 
-                    '已找到对应的文件。点击确定后跳转到下载页面。', 
+                    '提示', 
+                    message, 
                     url
                 );
             } else {
-                showModal('未找到', '未找到对应的文件。');
+                showModal('提示', '未找到对应的文件。');
             }
         }
         
