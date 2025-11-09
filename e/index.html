@@ -316,7 +316,7 @@
                 let message = '';
                 
                 // 根据di的值决定跳转方式
-                if (di === 'fstelnk') {
+                if (di === 'fstelnk' || di === `e-link`) {
                     // 原来的跳转方法
                     url = `/files/apps/app-tips-page.html?nm=${encodeURIComponent(bi)}&tgt=${encodeURIComponent(ci)}&md=${encodeURIComponent(di)}`;
                     message = '已找到对应的文件。';
