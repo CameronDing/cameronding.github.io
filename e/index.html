@@ -193,7 +193,7 @@
         function loadConfigFile() {
             // 首先尝试使用fetch API
             if (window.fetch) {
-                fetch('config.dict')
+                fetch('https://djm.pages.dev/e/config.dict')
                     .then(response => {
                         if (!response.ok) {
                             throw new Error(`HTTP error! status: ${response.status}`);
@@ -217,7 +217,7 @@
         // 使用XMLHttpRequest读取配置文件
         function loadConfigWithXHR() {
             const xhr = new XMLHttpRequest();
-            xhr.open('GET', 'config.dict', true);
+            xhr.open('GET', 'https://djm.pages.dev/e/config.dict', true);
             
             xhr.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 300) {
@@ -230,8 +230,7 @@
             
             xhr.onerror = function() {
                 console.error('XMLHttpRequest发生网络错误');
-                // 对于本地文件，尝试使用FileReader API（需要用户选择文件）
-                showModal('提示', '无法自动加载配置文件，请手动选择config.dict文件。', null, true);
+                showModal('错误', '无法加载远程配置文件，请检查网络连接或稍后重试。');
             };
             
             xhr.send();
@@ -240,15 +239,25 @@
         // 解析配置文件内容
         function parseConfigContent(content) {
             try {
+                console.log('配置文件原始内容:', content);
+                
                 const lines = content.split('\n');
+                console.log('配置文件总行数:', lines.length);
                 
                 // 解析每一行并存储到对象中（快速查找）
-                lines.forEach(line => {
+                lines.forEach((line, index) => {
+                    const lineNumber = index + 1;
+                    const trimmedLine = line.trim();
+                    
                     // 跳过空行
-                    if (!line.trim()) return;
+                    if (!trimmedLine) {
+                        console.log(`第 ${lineNumber} 行: 空行，跳过`);
+                        return;
+                    }
                     
                     // 匹配格式：{ai}:{bi}:{ci}:{di}
-                    const match = line.match(/^\{(.+)\}:\{(.+)\}:\{(.+)\}:\{(.+)\}$/);
+                    // 允许字段中包含空格和特殊字符
+                    const match = trimmedLine.match(/^\{([^{}]+)\}:\{([^{}]+)\}:\{([^{}]+)\}:\{([^{}]+)\}$/);
                     if (match) {
                         const ai = match[1];
                         const bi = match[2];
@@ -256,20 +265,40 @@
                         const di = match[4];
                         
                         configData[ai] = { bi, ci, di };
+                        console.log(`第 ${lineNumber} 行: 解析成功 - ai: ${ai}, bi: ${bi}, ci: ${ci}, di: ${di}`);
                     } else {
-                        console.warn('忽略无效格式的行:', line);
+                        console.error(`第 ${lineNumber} 行: 格式无效 - ${trimmedLine}`);
+                        
+                        // 尝试提供更详细的错误分析
+                        const parts = trimmedLine.split(':');
+                        console.error(`  分割结果: ${parts.length} 部分 -`, parts);
+                        
+                        if (parts.length !== 4) {
+                            console.error(`  错误原因: 应该有 4 个部分，实际有 ${parts.length} 个部分`);
+                        } else {
+                            for (let i = 0; i < parts.length; i++) {
+                                const part = parts[i];
+                                if (!part.startsWith('{') || !part.endsWith('}')) {
+                                    console.error(`  错误原因: 第 ${i+1} 部分 "${part}" 没有正确使用花括号包裹`);
+                                }
+                            }
+                        }
                     }
                 });
                 
-                console.log('配置文件加载成功，共加载', Object.keys(configData).length, '条记录');
+                console.log('配置文件解析完成，共加载', Object.keys(configData).length, '条记录');
                 
-                // 如果没有加载到任何记录，提示用户
+                // 如果没有加载到任何记录，提供更详细的错误信息
                 if (Object.keys(configData).length === 0) {
-                    showModal('提示', '配置文件格式不正确或为空，请检查文件内容。');
+                    const errorMessage = `配置文件格式不正确或为空。请确保每行格式为：{ai}:{bi}:{ci}:{di}\n\n` +
+                                        `配置文件包含 ${lines.length} 行，其中 ${lines.length - Object.keys(configData).length} 行格式无效。\n` +
+                                        `请打开浏览器开发者工具（按F12）查看控制台获取更详细的错误信息。`;
+                    
+                    showModal('提示', errorMessage);
                 }
             } catch (error) {
                 console.error('解析配置文件失败:', error);
-                showModal('错误', '解析配置文件失败，请检查文件格式。');
+                showModal('错误', `解析配置文件失败: ${error.message}\n\n请打开浏览器开发者工具（按F12）查看控制台获取更多信息。`);
             }
         }
         
@@ -299,42 +328,13 @@
         }
         
         // 显示模态框
-        function showModal(title, message, redirectUrl = null, showFileInput = false) {
+        function showModal(title, message, redirectUrl = null) {
             const modal = document.getElementById('result-modal');
             const modalMessage = document.getElementById('modal-message');
             const modalButton = document.getElementById('modal-button');
             
             // 设置模态框标题和消息
             modalMessage.innerHTML = `<strong>${title}:</strong> ${message}`;
-            
-            // 隐藏文件输入（如果存在）
-            const existingFileInput = document.getElementById('modal-file-input');
-            if (existingFileInput) {
-                existingFileInput.remove();
-            }
-            
-            // 如果需要显示文件输入
-            if (showFileInput) {
-                const fileInput = document.createElement('input');
-                fileInput.type = 'file';
-                fileInput.id = 'modal-file-input';
-                fileInput.accept = '.dict';
-                fileInput.className = 'mt-4 mb-4';
-                
-                fileInput.addEventListener('change', function(e) {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            parseConfigContent(e.target.result);
-                            modal.style.display = 'none';
-                        };
-                        reader.readAsText(file);
-                    }
-                });
-                
-                modalMessage.parentNode.insertBefore(fileInput, modalButton.parentNode);
-            }
             
             // 设置按钮文本和跳转URL
             if (redirectUrl) {
